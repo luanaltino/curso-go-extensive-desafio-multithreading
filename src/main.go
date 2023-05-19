@@ -36,10 +36,17 @@ func main() {
 	cdnApiCEP := make(chan CdnAPICep)
 
 	go func() {
+		if os.Getenv("SET_VIACEP_TIMEOUT") == "true" {
+			time.Sleep(time.Second * 10)
+		}
+		fmt.Println(os.Getenv("SET_VIACEP_TIMEOUT"))
 		viaCEP <- getViaCEP("14412-009")
 	}()
 
 	go func() {
+		if os.Getenv("SET_CDNAPI_TIMEOUT") == "true" {
+			time.Sleep(time.Second * 10)
+		}
 		cdnApiCEP <- getCdnAPICep("14412-009")
 	}()
 
