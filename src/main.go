@@ -22,9 +22,13 @@ type ViaCEP struct {
 }
 
 type CdnAPICep struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Status  string `json:"complemento"`
+	Status   int    `json:"status"`
+	Message  string `json:"message"`
+	Code     string `json:"code"`
+	State    string `json:"state"`
+	City     string `json:"city"`
+	District string `json:"district"`
+	Address  string `json:"address"`
 }
 
 func main() {
@@ -32,11 +36,11 @@ func main() {
 	cdnApiCEP := make(chan CdnAPICep)
 
 	go func() {
-		viaCEP <- getViaCEP("14412009")
+		viaCEP <- getViaCEP("14412-009")
 	}()
 
 	go func() {
-		cdnApiCEP <- getCdnAPICep("1412009")
+		cdnApiCEP <- getCdnAPICep("14412-009")
 	}()
 
 	select {
