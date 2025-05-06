@@ -1,6 +1,7 @@
 package main
 
 import (
+	"curso-go-extensive-desafio-multithreading/src/entities"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,31 +10,16 @@ import (
 	"time"
 )
 
-type ViaCEP struct {
-	Cep         string `json:"cep"`
-	Logradouro  string `json:"logradouro"`
-	Complemento string `json:"complemento"`
-	Localidade  string `json:"localidade"`
-	Uf          string `json:"uf"`
-	Ibge        string `json:"ibge"`
-	Gia         string `json:"gia"`
-	Ddd         string `json:"ddd"`
-	Siafi       string `json:"siafi"`
-}
-
-type CdnAPICep struct {
-	Status   int    `json:"status"`
-	Message  string `json:"message"`
-	Code     string `json:"code"`
-	State    string `json:"state"`
-	City     string `json:"city"`
-	District string `json:"district"`
-	Address  string `json:"address"`
-}
-
 func main() {
-	viaCEP := make(chan ViaCEP)
-	cdnApiCEP := make(chan CdnAPICep)
+	viaCEP := make(chan entities.ViaCEP) //inicializando canal
+	cdnApiCEP := make(chan entities.CdnAPICep)
+
+	go func() {
+		if os.Getenv("SET_CDNAPI_TIMEOUT") == "true" {
+			time.Sleep(time.Second * 10)
+		}
+		cdnApiCEP <- getCdnAPICep("14412-009")
+	}()
 
 	go func() {
 		if os.Getenv("SET_VIACEP_TIMEOUT") == "true" {
@@ -43,21 +29,14 @@ func main() {
 		viaCEP <- getViaCEP("14412-009")
 	}()
 
-	go func() {
-		if os.Getenv("SET_CDNAPI_TIMEOUT") == "true" {
-			time.Sleep(time.Second * 10)
-		}
-		cdnApiCEP <- getCdnAPICep("14412-009")
-	}()
-
 	select {
-	case msg1 := <-viaCEP:
+	case viaCepResponse := <-viaCEP:
 		fmt.Print("ViaCEP: ")
-		fmt.Print(msg1)
-	case msg2 := <-cdnApiCEP:
+		fmt.Print(viaCepResponse)
+	case cdnApiCepResponse := <-cdnApiCEP:
 		fmt.Print("CDN API CEP: ")
-		fmt.Print(msg2)
-	case <-time.After(time.Second * 1):
+		fmt.Print(cdnApiCepResponse)
+	case <-time.After(time.Second * 20):
 		fmt.Println("timeout")
 	}
 }
@@ -75,10 +54,11 @@ func getCEP(url string) []byte {
 	return res
 }
 
-func getCdnAPICep(cep string) CdnAPICep {
+func getCdnAPICep(cep string) entities.CdnAPICep {
+	fmt.Print("Starting getCdnAPICep")
 	url := "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 	res := getCEP(url)
-	var data CdnAPICep
+	var data entities.CdnAPICep
 	err := json.Unmarshal(res, &data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Erro ao fazer o unmarshal: %v\n", err)
@@ -86,10 +66,11 @@ func getCdnAPICep(cep string) CdnAPICep {
 	return data
 }
 
-func getViaCEP(cep string) ViaCEP {
+func getViaCEP(cep string) entities.ViaCEP {
+	fmt.Print("Starting getCdnAPICep")
 	url := "https://viacep.com.br/ws/" + cep + "/json/"
 	res := getCEP(url)
-	var data ViaCEP
+	var data entities.ViaCEP
 	err := json.Unmarshal(res, &data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Erro ao fazer o unmarshal: %v\n", err)
